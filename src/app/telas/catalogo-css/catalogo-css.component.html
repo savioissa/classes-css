@@ -1,0 +1,231 @@
+<!-- Carrega o CSS estrutural dos componentes PrimeNG usados nos exemplos -->
+<app-estilos-primeng />
+
+<div class="cat-pagina">
+  <!-- Menu lateral -->
+  <aside class="cat-menu" [class.cat-menu--aberto]="menuAberto()">
+    <div class="cat-marca">
+      <span class="cat-marca__icone"><i class="pi pi-palette"></i></span>
+      <div>
+        <div class="cat-marca__nome">Catálogo CSS</div>
+        <div class="cat-marca__arquivo">src/styles.css</div>
+      </div>
+      <button type="button" class="cat-menu__alternar" (click)="menuAberto.set(!menuAberto())" aria-label="Abrir ou fechar filtros">
+        <i class="pi" [class.pi-sliders-h]="!menuAberto()" [class.pi-times]="menuAberto()"></i>
+      </button>
+    </div>
+
+    <div class="cat-menu__corpo">
+      <label class="cat-busca">
+        <i class="pi pi-search"></i>
+        <input type="search" placeholder="Buscar classe, atributo ou cor (#3B82F6)" [value]="busca()" (input)="busca.set($any($event.target).value)" />
+      </label>
+
+      <div class="cat-grupo-filtro">
+        <div class="cat-rotulo-filtro">Mostrar</div>
+        <div class="cat-segmentos">
+          <button type="button" [class.cat-ativo]="filtro() === 'todas'" (click)="filtro.set('todas')">Todas <span>{{ totais.classes }}</span></button>
+          <button type="button" [class.cat-ativo]="filtro() === 'problemas'" (click)="filtro.set('problemas')"><i class="pi pi-exclamation-triangle"></i> Problemas <span>{{ totais.problemas }}</span></button>
+          <button type="button" [class.cat-ativo]="filtro() === 'repeticoes'" (click)="filtro.set('repeticoes')"><i class="pi pi-copy"></i> Repetidas <span>{{ totais.repeticoes }}</span></button>
+        </div>
+      </div>
+
+      <div class="cat-grupo-filtro">
+        <div class="cat-rotulo-filtro">Tipo de regra</div>
+        <div class="cat-segmentos">
+          <button type="button" [class.cat-ativo]="tipo() === 'todos'" (click)="tipo.set('todos')">Todos</button>
+          <button type="button" [class.cat-ativo]="tipo() === 'propria'" (click)="tipo.set('propria')">Classes <span>{{ totais.porTipo.propria }}</span></button>
+          <button type="button" [class.cat-ativo]="tipo() === 'global'" (click)="tipo.set('global')">Globais <span>{{ totais.porTipo.global }}</span></button>
+          <button type="button" [class.cat-ativo]="tipo() === 'externa'" (click)="tipo.set('externa')">Externas <span>{{ totais.porTipo.externa }}</span></button>
+        </div>
+      </div>
+
+      <nav class="cat-nav">
+        <div class="cat-rotulo-filtro">Categorias</div>
+        @for (secao of secoes(); track secao.categoria.id) {
+          <button type="button" class="cat-nav__item" (click)="irPara('cat-' + secao.categoria.id)">
+            <i class="pi {{ secao.categoria.icone }}"></i>
+            <span class="cat-nav__nome">{{ secao.categoria.nome }}</span>
+            @if (problemasNaCategoria(secao.categoria); as p) {
+              <span class="cat-nav__alerta" title="Classes com problema">{{ p }}</span>
+            }
+            <span class="cat-nav__total">{{ secao.itens.length }}</span>
+          </button>
+        } @empty {
+          <p class="cat-nav__vazio">Nenhuma categoria com esses filtros.</p>
+        }
+      </nav>
+    </div>
+  </aside>
+
+  <!-- Conteúdo -->
+  <main class="cat-conteudo">
+    <header class="cat-topo">
+      <h1>Classes do styles.css</h1>
+      <p>Cada card mostra o nome da classe, o que ela faz na tela, um exemplo ao vivo (usando o CSS real do projeto) e os atributos com o valor que de fato vale.</p>
+
+      <div class="cat-numeros">
+        <div><strong>{{ totais.classes }}</strong><span>classes e ajustes</span></div>
+        <div><strong>{{ arquivo.totalRegras }}</strong><span>regras CSS</span></div>
+        <div><strong>{{ arquivo.totalLinhas }}</strong><span>linhas no arquivo</span></div>
+        <div class="cat-numeros--alerta"><strong>{{ totais.problemas }}</strong><span>classes com problema</span></div>
+        <div class="cat-numeros--info"><strong>{{ totais.repeticoes }}</strong><span>classes repetidas</span></div>
+      </div>
+
+      <details class="cat-sobre">
+        <summary><i class="pi pi-info-circle"></i> Sobre o arquivo, os imports e como ler os cards</summary>
+        <div class="cat-sobre__grade">
+          <section>
+            <h3>Como ler</h3>
+            <ul>
+              <li><span class="cat-selo cat-selo--propria">Classe</span> você aplica num elemento (<code>class="..."</code>).</li>
+              <li><span class="cat-selo cat-selo--global">Ajuste global</span> não depende de classe sua: muda um componente do PrimeNG (ou um elemento HTML) no sistema todo.</li>
+              <li><span class="cat-selo cat-selo--externa">Biblioteca externa</span> ajusta componentes de outra biblioteca.</li>
+              <li><span class="cat-alvo">no elemento</span> a regra estiliza o próprio elemento que recebe a classe; <span class="cat-alvo cat-alvo--interno">dentro</span> estiliza algo dentro dele (ex.: o botão dentro de <code>.btn-search</code>).</li>
+              <li>Valores <s>riscados</s> foram declarados antes e sobrescritos; o valor que vale aparece em destaque.</li>
+              <li><span class="cat-aviso-mini cat-aviso-mini--problema">Problema</span> muda o que aparece na tela de um jeito provavelmente não intencional. <span class="cat-aviso-mini">Organização</span> é repetição sem efeito visual.</li>
+            </ul>
+          </section>
+          <section>
+            <h3>Imports ({{ arquivo.imports.length }})</h3>
+            <ul class="cat-imports">
+              @for (imp of arquivo.imports; track imp.linha) {
+                <li><code>{{ imp.texto }}</code> <span class="cat-linha">linha {{ imp.linha }}</span></li>
+              }
+            </ul>
+            @for (aviso of arquivo.avisos; track $index) {
+              <div class="cat-aviso" [class.cat-aviso--problema]="ehProblema(aviso)">
+                <strong>{{ aviso.titulo }}</strong>
+                <span>{{ aviso.texto }}</span>
+              </div>
+            }
+          </section>
+        </div>
+      </details>
+    </header>
+
+    @if (secoes().length === 0) {
+      <div class="cat-vazio">
+        <i class="pi pi-search"></i>
+        <p>Nenhuma classe encontrada para esses filtros.</p>
+        <button type="button" class="cat-botao" (click)="limparFiltros()">Limpar filtros</button>
+      </div>
+    }
+
+    @for (secao of secoes(); track secao.categoria.id) {
+      <section class="cat-secao" [id]="'cat-' + secao.categoria.id">
+        <div class="cat-secao__cabecalho">
+          <h2><i class="pi {{ secao.categoria.icone }}"></i> {{ secao.categoria.nome }} <span>{{ secao.itens.length }}</span></h2>
+          <p>{{ secao.categoria.resumo }}</p>
+        </div>
+
+        @for (item of secao.itens; track item.chave) {
+          <article class="cat-card" [class.cat-card--problema]="item.problemas > 0">
+            <div class="cat-card__cabecalho">
+              <button type="button" class="cat-card__nome" (click)="copiar(item.chave, item.chave)" title="Copiar o nome">
+                {{ item.chave }} <i class="pi pi-copy"></i>
+              </button>
+              <span class="cat-selo cat-selo--{{ item.tipo }}">{{ nomesDosTipos[item.tipo] }}</span>
+              <span class="cat-linha">linha {{ item.linha }}</span>
+              @if (item.problemas) {
+                <span class="cat-aviso-mini cat-aviso-mini--problema"><i class="pi pi-exclamation-triangle"></i> {{ item.problemas }} {{ item.problemas === 1 ? 'problema' : 'problemas' }}</span>
+              }
+              @if (item.avisos.length - item.problemas > 0) {
+                <span class="cat-aviso-mini"><i class="pi pi-copy"></i> {{ item.avisos.length - item.problemas }} de organização</span>
+              }
+            </div>
+
+            <p class="cat-card__descricao">{{ item.info.descricao }}</p>
+
+            <div class="cat-card__corpo">
+              <div class="cat-bloco">
+                <div class="cat-bloco__titulo">Na tela</div>
+                @if (item.html) {
+                  <div class="cat-exemplo {{ item.classeDoFundo }}" [innerHTML]="item.html"></div>
+                } @else {
+                  <div class="cat-exemplo cat-exemplo--sem"><i class="pi pi-eye-slash"></i> {{ item.info.semExemplo }}</div>
+                }
+                @if (item.info.dica) {
+                  <div class="cat-dica"><i class="pi pi-hand-pointer"></i> {{ item.info.dica }}</div>
+                }
+                @if (item.codigoExemplo) {
+                  <details class="cat-codigo">
+                    <summary>HTML do exemplo</summary>
+                    <button type="button" class="cat-codigo__copiar" (click)="copiar(item.codigoExemplo, 'HTML do exemplo de ' + item.chave)"><i class="pi pi-copy"></i> Copiar</button>
+                    <pre>{{ item.codigoExemplo }}</pre>
+                  </details>
+                }
+              </div>
+
+              <div class="cat-bloco">
+                <div class="cat-bloco__titulo">
+                  Atributos
+                  <button type="button" class="cat-link" (click)="copiar(item.css, 'CSS de ' + item.chave)"><i class="pi pi-copy"></i> Copiar CSS</button>
+                </div>
+                @for (sel of item.seletores; track sel.id) {
+                  <div class="cat-seletor">
+                    <div class="cat-seletor__nome">
+                      <code>{{ sel.seletor }}</code>
+                      <span class="cat-alvo" [class.cat-alvo--interno]="sel.alvo === 'interno'">{{ sel.alvo === 'interno' ? 'dentro' : 'no elemento' }}</span>
+                      @if (sel.media) {
+                        <span class="cat-alvo cat-alvo--media">{{ sel.media }}</span>
+                      }
+                      <span class="cat-linha">{{ sel.linhas.length > 1 ? 'linhas ' : 'linha ' }}{{ sel.linhas.join(', ') }}</span>
+                    </div>
+                    <table class="cat-atributos">
+                      <tbody>
+                        @for (a of sel.atributos; track a.prop) {
+                          <tr>
+                            <th>{{ a.prop }}</th>
+                            <td>
+                              <span class="cat-valor">
+                                @for (p of a.partes; track $index) {
+                                  @if (p.cor) {
+                                    <span class="cat-cor" [style.background]="p.cor"></span>
+                                  }
+                                  {{ p.texto }}
+                                }
+                                @if (a.importante) {
+                                  <span class="cat-importante">!important</span>
+                                }
+                              </span>
+                              @if (a.anteriores) {
+                                @for (ant of a.anteriores; track $index) {
+                                  <div class="cat-anterior">
+                                    <s>{{ ant.valor }}</s> linha {{ ant.linha }}{{ ant.ignorado ? ' (perde para o !important)' : '' }}
+                                  </div>
+                                }
+                              }
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </div>
+            </div>
+
+            @if (item.avisos.length) {
+              <div class="cat-avisos">
+                @for (aviso of item.avisos; track $index) {
+                  <div class="cat-aviso" [class.cat-aviso--problema]="ehProblema(aviso)">
+                    <strong><i class="pi" [class.pi-exclamation-triangle]="ehProblema(aviso)" [class.pi-copy]="!ehProblema(aviso)"></i> {{ aviso.titulo }}</strong>
+                    <span>{{ aviso.texto }}</span>
+                    @if (aviso.detalhes) {
+                      <ul>
+                        @for (d of aviso.detalhes; track $index) {
+                          <li>{{ d }}</li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </article>
+        }
+      </section>
+    }
+  </main>
+</div>
